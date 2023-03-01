@@ -1,1 +1,1 @@
-console.log('Hello, world');
+export {qsort, qsortInPlace} from './qsort';
