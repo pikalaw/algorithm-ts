@@ -42,4 +42,26 @@ describe('qsortInPlace', () => {
     qsortInPlace(list);
     expect(list).toEqual([]);
   });
+
+  it('should perform faster than plain qsort', () => {
+    const list = Array.from({length: 10000}, () =>
+      Math.floor(Math.random() * 10000)
+    );
+
+    console.time('qsort');
+    const qsortStartTime = performance.now();
+    qsort(list);
+    const qsortEndTime = performance.now();
+    console.timeEnd('qsort');
+
+    console.time('qsortInPlace');
+    const qsortInPlaceStartTime = performance.now();
+    qsortInPlace(list);
+    const qsortInPlaceEndTime = performance.now();
+    console.timeEnd('qsortInPlace');
+
+    expect(qsortInPlaceEndTime - qsortInPlaceStartTime).toBeLessThan(
+      qsortEndTime - qsortStartTime
+    );
+  });
 });

@@ -30,6 +30,8 @@ function partition<Value>(list: Value[], from: number, to: number): number {
   if (from === to) return from;
 
   const pivot = list[from];
+  // Elements whose index are less than a are <= the pivot.
+  // Elements whose index are greater than b are > the pivot.
   let [a, b] = [from, to];
 
   while (a <= b) {
