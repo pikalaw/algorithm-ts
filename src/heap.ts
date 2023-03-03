@@ -1,5 +1,3 @@
-import assert = require('assert');
-
 export class Heap<Value> {
   pop(): Value | undefined {
     if (this.nodes.length === 0) return undefined;
