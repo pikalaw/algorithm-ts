@@ -1,4 +1,4 @@
-import {bfs, dfs, Graph} from '../src/graph';
+import {bfs, dfs, Graph, WeightedGraph, shortestPath} from '../src/graph';
 
 function linearGraph(nodes: String[]): Graph<String> {
   return (parent: String) => {
@@ -199,5 +199,46 @@ describe('bfs', () => {
         ['b', 'a'],
         ['z', 'b'],
       ]);
+  });
+});
+
+describe('shortestPath', () => {
+  xit('should pick shorter path of a graph of four nodes and two paths', () => {
+    const testGraph: WeightedGraph<String> = {
+      children: parent => {
+        switch (parent) {
+          case 'a':
+            return ['b', 'c'].values();
+          case 'b':
+            return ['z'].values();
+          case 'c':
+            return ['z'].values();
+          default:
+            return [].values();
+        }
+      },
+      weights: (from, to) => {
+        switch (from) {
+          case 'a':
+            switch (to) {
+              case 'b':
+                return 1;
+              case 'c':
+                return 1;
+            }
+            break;
+          case 'b':
+            return 2;
+          case 'c':
+            return 3;
+        }
+        return NaN;
+      },
+    };
+
+    expect(shortestPath({graph: testGraph, source: 'a', target: 'z'})).toEqual({
+      path: ['a', 'b', 'z'],
+      cost: 3,
+    });
   });
 });

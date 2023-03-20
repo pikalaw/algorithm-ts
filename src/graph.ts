@@ -87,3 +87,69 @@ type BfsFrame<Node> = {
   node: Node;
   next?: BfsFrame<Node>;
 };
+
+// A* search of the shortest path.
+export function shortestPath<Node>({
+  graph,
+  source,
+  target,
+  lowerBound,
+}: {
+  graph: WeightedGraph<Node>;
+  source: Node;
+  target: Node;
+  lowerBound?: EdgeWeight<Node>;
+}): {
+  path: readonly Node[];
+  cost: number;
+} {
+  const remainingLowerBound = (node: Node): number =>
+    lowerBound?.(node, target) ?? 0;
+/*
+  const heap = new UniqueHeap<Node, number>();
+  heap.insert({
+    key: source,
+    value: 0,
+    priority: -remainingLowerBound(source),
+  });
+
+  const parents = new Map<Node, Node>();
+
+  while (heap.length > 0) {
+    const {key: node, value: costSoFar} = heap.pop()!;
+    if (node === target) {
+      return {
+        path: extractPath(parents, target),
+        cost: costSoFar,
+      };
+    }
+
+    for (const child of graph.children(node)) {
+      const newChildCost = costSoFar + graph.weights(node, child);
+      const oldChildCost = -(heap.peek(child)?.priority ?? -Infinity);
+      if (newChildCost < oldChildCost) {
+        heap.insert({
+          key: child,
+          value: newChildCost,
+          priority: -newChildCost - remainingLowerBound(child),
+        });
+        parents.set(child, node);
+      }
+    }
+  }
+*/
+  return {path: [], cost: NaN};
+}
+
+function extractPath<Node>(
+  parents: Map<Node, Node>,
+  target: Node
+): readonly Node[] {
+  const path: Node[] = [target];
+  for (;;) {
+    const parent = parents.get(path[path.length - 1]);
+    if (parent === undefined) break;
+    path.push(parent);
+  }
+  return path.reverse();
+}
