@@ -107,6 +107,10 @@ function isStitchGroup(c: Command): c is StitchGroup {
   return 'repeat' in c;
 }
 
+function isPattern(c: Command): c is Pattern {
+  return 'patternType' in c;
+}
+
 function magicCircle(initialStitchCount: number): MagicCircle {
   return {
     initialStitchCount,
