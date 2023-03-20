@@ -14,57 +14,58 @@ function processStdin() {
 
 function processLine(line: string) {
   for (const command of tokenizeLine(line)) {
-    const steps = translate(command);
-    console.log(`Input ${JSON.stringify(command)}`);
-    console.log(`Output ${JSON.stringify(steps)}`);
+    console.log(`Got ${JSON.stringify(command)}`);
+    for (const step of translate(command)) {
+      console.log(`Step ${JSON.stringify(step)}`);
+    }
   }
 }
 
 // Chain.
 type Chain = {
-  type: 'c';
+  stitchType: 'c';
 };
 
 type MagicCircle = {
   initialStitchCount: number;
-  type: 'mc';
+  patternType: 'mc';
 };
 
 type MagicEllipse = {
   extendedStitchCount: number;
-  type: 'me';
+  patternType: 'me';
 };
 
 type StartGroup = Chain | MagicCircle | MagicEllipse;
 
 // Single crochet.
 type SingleCrochet = {
-  type: 'sc';
+  stitchType: 'sc';
 };
 
 // Increase.
 type Increase = {
-  type: 'inc';
+  stitchType: 'inc';
 };
 
 // Increase assisted with a decrease.
 type IncreaseDecrease = {
-  type: 'incd';
+  stitchType: 'incd';
 };
 
 // Decrease.
 type Decrease = {
-  type: 'dec';
+  stitchType: 'dec';
 };
 
 // Skip.
 type Skip = {
-  type: 'sk';
+  stitchType: 'sk';
 };
 
 // Back.
 type Back = {
-  type: 'bk';
+  stitchType: 'bk';
 };
 
 type Stitch =
@@ -77,11 +78,13 @@ type Stitch =
   | Back;
 
 type StitchGroup = {
-  stitches: Array<Stitch | StitchGroup>;
+  stitches: Stitches[];
   repeat: number;
 };
 
-type Command = StartGroup | Stitch | StitchGroup;
+type Stitches = Stitch | StitchGroup;
+
+type Command = StartGroup | Stitches;
 
 // The cs-n pattern from https://timhutton.github.io/crochet-simulator.
 type ScN = {
@@ -98,46 +101,70 @@ type ScMN = {
 
 type Step = Chain | ScN | ScMN;
 
+function isStartGroup(c: Command): c is StartGroup {
+  if (!('patternType' in c)) return false;
+  switch (c.patternType) {
+    case 'mc':
+      return true;
+    case 'me':
+      return true;
+    default:
+      return false;
+  }
+}
+
+function isStitch(c: Command): c is Stitch {
+  return 'stitchType' in c;
+}
+
+function isStitchGroup(c: Command): c is StitchGroup {
+  return 'repeat' in c;
+}
+
+function isStitches(c: Command): c is Stitches {
+  return isStitch(c) || isStitchGroup(c);
+}
+
 function magicCircle(initialStitchCount: number): MagicCircle {
   return {
     initialStitchCount,
-    type: 'mc',
+    patternType: 'mc',
   };
 }
 
 function magicEllipse(extendedStitchCount: number): MagicEllipse {
   return {
     extendedStitchCount,
-    type: 'me',
+    patternType: 'me',
   };
 }
 
 function c(): Chain {
-  return {type: 'c'};
+  return {stitchType: 'c'};
 }
 
 function sc(): SingleCrochet {
-  return {type: 'sc'};
+  return {stitchType: 'sc'};
 }
 
 function inc(): Increase {
-  return {type: 'inc'};
+  return {stitchType: 'inc'};
 }
 
 function incdec(): IncreaseDecrease {
-  return {type: 'incd'};
+  return {stitchType: 'incd'};
 }
 
 function dec(): Decrease {
-  return {type: 'dec'};
+  return {stitchType: 'dec'};
 }
 
 function sk(): Skip {
-  return {type: 'sk'};
+  return {stitchType: 'sk'};
 }
 
 function bk(): Back {
-  return {type: 'bk'};
+  return {stitchType: 'bk'};
 }
 
 function scn(n: number): ScN {
@@ -159,9 +186,32 @@ function* tokenizeLine(line: string): Generator<Command> {
   // Ignore comments.
   if (line.startsWith('//')) return;
 
-  for (const linePiece of line.split(/\s+/)) {
+  for (const linePiece of splitLine(line)) {
     yield* tokenizeLinePiece(linePiece);
   }
+}
+
+function splitLine(line: string): string[] {
+  const copy = line.split('');
+  let bracketDepth = 0;
+  for (let i = 0; i < copy.length; i++) {
+    if (copy[i] === '[') {
+      bracketDepth++;
+      continue;
+    }
+    if (copy[i] === ']') {
+      bracketDepth--;
+      continue;
+    }
+    if (copy[i] === ' ' && bracketDepth > 0) {
+      copy[i] = '^';
+    }
+  }
+
+  return copy
+    .join('')
+    .split(/\s+/)
+    .map(s => s.replace(/\^/g, ' '));
 }
 
 function* tokenizeLinePiece(piece: string): Generator<Command> {
@@ -198,12 +248,12 @@ function* tokenizeSingle(piece: string): Generator<Command> {
   }
 
   if (piece.startsWith('mc')) {
-    const matches = piece.match(/mc\(\d+\)/);
+    const matches = piece.match(/mc\((\d+)\)/);
     if (!matches) throw new Error(`Unknown input '${piece}'.`);
 
     const initialStitchCount = Number(matches[1]);
-    if (initialStitchCount < 0 || initialStitchCount !== Infinity) {
-      throw new Error(`Unknown input '${piece}'.`);
+    if (!isPositiveNumber(initialStitchCount)) {
+      throw new Error(`Unknown input '${piece}'`);
     }
 
     yield magicCircle(initialStitchCount);
@@ -211,11 +261,11 @@ function* tokenizeSingle(piece: string): Generator<Command> {
   }
 
   if (piece.startsWith('me')) {
-    const matches = piece.match(/me\(\d+\)/);
+    const matches = piece.match(/me\((\d+)\)/);
     if (!matches) throw new Error(`Unknown input '${piece}'.`);
 
     const extendedStitchCount = Number(matches[1]);
-    if (extendedStitchCount < 0 || extendedStitchCount !== Infinity) {
+    if (!isPositiveNumber(extendedStitchCount)) {
       throw new Error(`Unknown input '${piece}'.`);
     }
 
@@ -234,14 +284,29 @@ function* tokenizeGroup(piece: string): Generator<Command> {
   const repeat = Number(repeatStr);
   if (repeat < 1) throw new Error(`Unknown input '${piece}'.`);
 
+  const stitches: Array<Stitch | StitchGroup> = [];
+  for (const c of tokenizeLine(innerPiece)) {
+    if (isStitches(c)) {
+      stitches.push(c);
+    }
+  }
+
   yield {
-    stitches: [...(yield* tokenizeLinePiece(innerPiece))],
+    stitches,
     repeat,
   };
 }
 
-function translate(command: Command): Step[] {
-  return [c(), scn(1), scmn(1, 2)];
+function isPositiveNumber(n: number): boolean {
+  return n > 0 && n !== Infinity;
+}
+
+function* translate(command: Command): Generator<Step> {
+  /*
+  yield c();
+  yield scn(1);
+  yield scmn(1, 2);
+  */
 }
 
 processStdin();

@@ -1,0 +1,5 @@
+mc(6)
+me(2)
+c sc inc
+dec
+[sc inc incdec]4
