@@ -206,10 +206,7 @@ function* tokenizeSingle(piece: string): Generator<Command> {
       throw new Error(`Unknown input '${piece}'.`);
     }
 
-    yield {
-      initialStitchCount,
-      type: 'mc',
-    };
+    yield magicCircle(initialStitchCount);
     return;
   }
 
@@ -222,10 +219,7 @@ function* tokenizeSingle(piece: string): Generator<Command> {
       throw new Error(`Unknown input '${piece}'.`);
     }
 
-    yield {
-      extendedStitchCount,
-      type: 'me',
-    };
+    yield magicEllipse(extendedStitchCount);
     return;
   }
 
@@ -233,7 +227,17 @@ function* tokenizeSingle(piece: string): Generator<Command> {
 }
 
 function* tokenizeGroup(piece: string): Generator<Command> {
-  yield c();
+  const matches = piece.match(/\[(.+)\](\d+)/);
+  if (!matches) throw new Error(`Unknown input '${piece}'.`);
+
+  const [, innerPiece, repeatStr] = matches;
+  const repeat = Number(repeatStr);
+  if (repeat < 1) throw new Error(`Unknown input '${piece}'.`);
+
+  yield {
+    stitches: [...(yield* tokenizeLinePiece(innerPiece))],
+    repeat,
+  };
 }
 
 function translate(command: Command): Step[] {
