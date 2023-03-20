@@ -13,8 +13,8 @@ function processStdin() {
 }
 
 function processLine(line: string) {
-  for (const command of tokenize(line)) {
-    const steps = parse(command);
+  for (const command of tokenizeLine(line)) {
+    const steps = translate(command);
     console.log(`Input ${JSON.stringify(command)}`);
     console.log(`Output ${JSON.stringify(steps)}`);
   }
@@ -155,21 +155,88 @@ function scmn(m: number, n: number): ScMN {
   };
 }
 
-function* tokenize(line: string): Generator<Command> {
-  yield c();
-  yield sc();
-  yield inc();
-  yield incdec();
-  yield dec();
-  yield sk();
-  yield bk();
-  yield {
-    stitches: [sc(), inc()],
-    repeat: 2,
-  };
+function* tokenizeLine(line: string): Generator<Command> {
+  // Ignore comments.
+  if (line.startsWith('//')) return;
+
+  for (const linePiece of line.split(/\s+/)) {
+    yield* tokenizeLinePiece(linePiece);
+  }
 }
 
-function parse(command: Command): Step[] {
+function* tokenizeLinePiece(piece: string): Generator<Command> {
+  if (piece.startsWith('[')) {
+    yield* tokenizeGroup(piece);
+  } else {
+    yield* tokenizeSingle(piece);
+  }
+}
+
+function* tokenizeSingle(piece: string): Generator<Command> {
+  switch (piece) {
+    case 'c':
+      yield c();
+      return;
+    case 'sc':
+      yield sc();
+      return;
+    case 'inc':
+      yield inc();
+      return;
+    case 'incdec':
+      yield incdec();
+      return;
+    case 'dec':
+      yield dec();
+      return;
+    case 'sk':
+      yield sk();
+      return;
+    case 'bk':
+      yield bk();
+      return;
+  }
+
+  if (piece.startsWith('mc')) {
+    const matches = piece.match(/mc\(\d+\)/);
+    if (!matches) throw new Error(`Unknown input '${piece}'.`);
+
+    const initialStitchCount = Number(matches[1]);
+    if (initialStitchCount < 0 || initialStitchCount !== Infinity) {
+      throw new Error(`Unknown input '${piece}'.`);
+    }
+
+    yield {
+      initialStitchCount,
+      type: 'mc',
+    };
+    return;
+  }
+
+  if (piece.startsWith('me')) {
+    const matches = piece.match(/me\(\d+\)/);
+    if (!matches) throw new Error(`Unknown input '${piece}'.`);
+
+    const extendedStitchCount = Number(matches[1]);
+    if (extendedStitchCount < 0 || extendedStitchCount !== Infinity) {
+      throw new Error(`Unknown input '${piece}'.`);
+    }
+
+    yield {
+      extendedStitchCount,
+      type: 'me',
+    };
+    return;
+  }
+
+  throw new Error(`Unknown input '${piece}'.`);
+}
+
+function* tokenizeGroup(piece: string): Generator<Command> {
+  yield c();
+}
+
+function translate(command: Command): Step[] {
   return [c(), scn(1), scmn(1, 2)];
 }
 
