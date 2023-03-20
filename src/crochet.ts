@@ -211,6 +211,7 @@ function splitLine(line: string): string[] {
   return copy
     .join('')
     .split(/\s+/)
+    .filter(s => s !== '')
     .map(s => s.replace(/\^/g, ' '));
 }
 
