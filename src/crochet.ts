@@ -21,7 +21,7 @@ function processLine(line: string) {
 }
 
 // Chain.
-type C = {
+type Chain = {
   type: 'c';
 };
 
@@ -31,43 +31,50 @@ type MagicCircle = {
 };
 
 type MagicEllipse = {
-  initialExtentionStitchCount: number;
+  extendedStitchCount: number;
   type: 'me';
 };
 
-type StartGroup = C | MagicCircle | MagicEllipse;
+type StartGroup = Chain | MagicCircle | MagicEllipse;
 
 // Single crochet.
-type Sc = {
+type SingleCrochet = {
   type: 'sc';
 };
 
 // Increase.
-type Inc = {
+type Increase = {
   type: 'inc';
 };
 
 // Increase assisted with a decrease.
-type IncD = {
+type IncreaseDecrease = {
   type: 'incd';
 };
 
 // Decrease.
-type Dec = {
+type Decrease = {
   type: 'dec';
 };
 
 // Skip.
-type Sk = {
+type Skip = {
   type: 'sk';
 };
 
 // Back.
-type Bk = {
+type Back = {
   type: 'bk';
 };
 
-type Stitch = Sc | Inc | IncD | Dec | Sk | Bk;
+type Stitch =
+  | Chain
+  | SingleCrochet
+  | Increase
+  | IncreaseDecrease
+  | Decrease
+  | Skip
+  | Back;
 
 type StitchGroup = {
   stitches: Array<Stitch | StitchGroup>;
@@ -89,33 +96,47 @@ type ScMN = {
   type: 'sc-m-n';
 };
 
-type Step = C | ScN | ScMN;
+type Step = Chain | ScN | ScMN;
 
-function c(): C {
+function magicCircle(initialStitchCount: number): MagicCircle {
+  return {
+    initialStitchCount,
+    type: 'mc',
+  };
+}
+
+function magicEllipse(extendedStitchCount: number): MagicEllipse {
+  return {
+    extendedStitchCount,
+    type: 'me',
+  };
+}
+
+function c(): Chain {
   return {type: 'c'};
 }
 
-function sc(): Sc {
+function sc(): SingleCrochet {
   return {type: 'sc'};
 }
 
-function inc(): Inc {
+function inc(): Increase {
   return {type: 'inc'};
 }
 
-function incd(): IncD {
+function incdec(): IncreaseDecrease {
   return {type: 'incd'};
 }
 
-function dec(): Dec {
+function dec(): Decrease {
   return {type: 'dec'};
 }
 
-function sk(): Sk {
+function sk(): Skip {
   return {type: 'sk'};
 }
 
-function bk(): Bk {
+function bk(): Back {
   return {type: 'bk'};
 }
 
@@ -138,7 +159,7 @@ function* tokenize(line: string): Generator<Command> {
   yield c();
   yield sc();
   yield inc();
-  yield incd();
+  yield incdec();
   yield dec();
   yield sk();
   yield bk();
