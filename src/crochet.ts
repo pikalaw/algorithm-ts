@@ -287,9 +287,10 @@ function* tokenizeGroup(piece: string): Generator<Command> {
 
   const stitches: Array<Stitch | StitchGroup> = [];
   for (const c of tokenizeLine(innerPiece)) {
-    if (isStitches(c)) {
-      stitches.push(c);
+    if (!isStitches(c)) {
+      throw new Error(`groups should have stitches only but found ${piece}`);
     }
+    stitches.push(c);
   }
 
   yield {
