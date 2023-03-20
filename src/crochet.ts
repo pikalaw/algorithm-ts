@@ -277,7 +277,7 @@ function* tokenizeSingle(piece: string): Generator<Command> {
   throw new Error(`Unknown input '${piece}'.`);
 }
 
-function* tokenizeGroup(piece: string): Generator<Command> {
+function* tokenizeGroup(piece: string): Generator<StitchGroup> {
   const matches = piece.match(/\[(.+)\](\d+)/);
   if (!matches) throw new Error(`Unknown input '${piece}'.`);
 
