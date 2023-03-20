@@ -36,7 +36,7 @@ type MagicEllipse = {
   patternType: 'me';
 };
 
-type StartGroup = Chain | MagicCircle | MagicEllipse;
+type Pattern = MagicCircle | MagicEllipse;
 
 // Single crochet.
 type SingleCrochet = {
@@ -78,13 +78,11 @@ type Stitch =
   | Back;
 
 type StitchGroup = {
-  stitches: Stitches[];
+  commands: Command[];
   repeat: number;
 };
 
-type Stitches = Stitch | StitchGroup;
-
-type Command = StartGroup | Stitches;
+type Command = Pattern | Stitch | StitchGroup;
 
 // The cs-n pattern from https://timhutton.github.io/crochet-simulator.
 type ScN = {
@@ -101,28 +99,12 @@ type ScMN = {
 
 type Step = Chain | ScN | ScMN;
 
-function isStartGroup(c: Command): c is StartGroup {
-  if (!('patternType' in c)) return false;
-  switch (c.patternType) {
-    case 'mc':
-      return true;
-    case 'me':
-      return true;
-    default:
-      return false;
-  }
-}
-
 function isStitch(c: Command): c is Stitch {
   return 'stitchType' in c;
 }
 
 function isStitchGroup(c: Command): c is StitchGroup {
   return 'repeat' in c;
-}
-
-function isStitches(c: Command): c is Stitches {
-  return isStitch(c) || isStitchGroup(c);
 }
 
 function magicCircle(initialStitchCount: number): MagicCircle {
@@ -285,16 +267,8 @@ function* tokenizeGroup(piece: string): Generator<StitchGroup> {
   const repeat = Number(repeatStr);
   if (repeat < 1) throw new Error(`Unknown input '${piece}'.`);
 
-  const stitches: Array<Stitch | StitchGroup> = [];
-  for (const c of tokenizeLine(innerPiece)) {
-    if (!isStitches(c)) {
-      throw new Error(`groups should have stitches only but found ${piece}`);
-    }
-    stitches.push(c);
-  }
-
   yield {
-    stitches,
+    commands: [...tokenizeLine(innerPiece)],
     repeat,
   };
 }
