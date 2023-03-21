@@ -58,6 +58,7 @@ type Command = Pattern | Stitch | StitchGroup;
 
 interface Crocheter<Output> {
   execute(stitch: Stitch): Generator<Output>;
+  format(output: Output): string;
 }
 
 function isStitch(c: Command): c is Stitch {
@@ -120,8 +121,10 @@ function processStdin<Output>(
 ) {
   rl.question('\nInput: ', line => {
     for (const output of processLine(line, crocheter)) {
-      console.log(`Output ${output}`);
+      process.stdout.write(' ');
+      process.stdout.write(output);
     }
+    process.stdout.write('\n');
     processStdin(rl, crocheter);
   });
 }
@@ -131,11 +134,9 @@ function* processLine<Output>(
   crocheter: Crocheter<Output>
 ): Generator<string> {
   for (const command of tokenizeLine(line)) {
-    console.log(`Processing command ${JSON.stringify(command)}`);
     for (const stitch of extractStitches(command)) {
-      console.log(`Translating stitch ${JSON.stringify(stitch)}`);
       for (const step of crocheter.execute(stitch)) {
-        yield JSON.stringify(step);
+        yield crocheter.format(step);
       }
     }
   }
@@ -337,29 +338,81 @@ function* extractStitchesFromMagicEllipse(me: MagicEllipse): Generator<Stitch> {
 // The cs-n pattern from https://timhutton.github.io/crochet-simulator.
 type ScN = {
   stitchAgo: number;
-  type: 'sc-n';
+  timType: 'sc-n';
 };
 
 // The cs-m-n pattern from https://timhutton.github.io/crochet-simulator.
 type ScMN = {
   stitchAgo1: number;
   stitchAgo2: number;
-  type: 'sc-m-n';
+  timType: 'sc-m-n';
 };
 
 type Step = Chain | ScN | ScMN;
+
+function isChain(step: Step): step is Chain {
+  return 'stitchType' in step;
+}
+
+function isScN(step: Step): step is ScN {
+  return 'timType' in step && step.timType === 'sc-n';
+}
+
+function isScMN(step: Step): step is ScMN {
+  return 'timType' in step && step.timType === 'sc-m-n';
+}
+
 class TimCrocheter implements Crocheter<Step> {
+  private offset = 0;
+
   *execute(stitch: Stitch): Generator<Step> {
-    yield scn(2);
-    yield scmn(2, 3);
+    switch (stitch.stitchType) {
+      case 'c':
+        yield c();
+        break;
+      case 'sk':
+        this.offset--;
+        break;
+      case 'bk':
+        this.offset++;
+        break;
+      case 'sc':
+        yield scn(this.offset);
+        break;
+      case 'inc':
+        yield scn(this.offset++);
+        yield scn(this.offset);
+        break;
+      case 'dec':
+        yield scmn(this.offset--, this.offset);
+        break;
+      case 'incd':
+        yield scn(this.offset);
+        yield scmn(this.offset++, this.offset);
+        yield scn(this.offset);
+        break;
+      default:
+        throw new Error(`Unknown stitch ${stitch}`);
+    }
   }
 
+  format(step: Step): string {
+    if (isChain(step)) {
+      return `c`;
+    } else if (isScN(step)) {
+      return `sc-${step.stitchAgo}`;
+    } else if (isScMN(step)) {
+      return `sc-${step.stitchAgo1}-${step.stitchAgo2}`;
+    } else {
+      throw new Error(`Unknown step ${JSON.stringify(step)}`);
+    }
+  }
 }
 
 function scn(n: number): ScN {
   return {
     stitchAgo: n,
-    type: 'sc-n',
+    timType: 'sc-n',
   };
 }
 
@@ -367,7 +420,7 @@ function scmn(m: number, n: number): ScMN {
   return {
     stitchAgo1: m,
     stitchAgo2: n,
-    type: 'sc-m-n',
+    timType: 'sc-m-n',
   };
 }
 
