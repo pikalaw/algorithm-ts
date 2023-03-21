@@ -119,7 +119,8 @@ function processStdin<Output>(
   rl: readline.Interface,
   crocheter: Crocheter<Output>
 ) {
-  rl.question('\nInput: ', line => {
+  rl.question('\nStitches: ', line => {
+    process.stdout.write('\n');
     for (const output of processLine(line, crocheter)) {
       process.stdout.write(' ');
       process.stdout.write(output);
@@ -398,7 +399,7 @@ class TimCrocheter implements Crocheter<Step> {
 
   format(step: Step): string {
     if (isChain(step)) {
-      return `c`;
+      return 'c';
     } else if (isScN(step)) {
       return `sc-${step.stitchAgo}`;
     } else if (isScMN(step)) {
