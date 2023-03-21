@@ -1,31 +1,5 @@
 import * as readline from 'readline';
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-function processStdin() {
-  rl.question('Input: ', line => {
-    processLine(line);
-    processStdin();
-  });
-}
-
-function processLine(line: string) {
-  for (const command of tokenizeLine(line)) {
-    console.log(`Got ${JSON.stringify(command)}`);
-    for (const step of translate(command)) {
-      console.log(`Step ${JSON.stringify(step)}`);
-    }
-  }
-}
-
-// Chain.
-type Chain = {
-  stitchType: 'c';
-};
-
 type MagicCircle = {
   initialStitchCount: number;
   patternType: 'mc';
@@ -38,32 +12,30 @@ type MagicEllipse = {
 
 type Pattern = MagicCircle | MagicEllipse;
 
-// Single crochet.
+type Chain = {
+  stitchType: 'c';
+};
+
 type SingleCrochet = {
   stitchType: 'sc';
 };
 
-// Increase.
 type Increase = {
   stitchType: 'inc';
 };
 
-// Increase assisted with a decrease.
 type IncreaseDecrease = {
   stitchType: 'incd';
 };
 
-// Decrease.
 type Decrease = {
   stitchType: 'dec';
 };
 
-// Skip.
 type Skip = {
   stitchType: 'sk';
 };
 
-// Back.
 type Back = {
   stitchType: 'bk';
 };
@@ -84,20 +56,9 @@ type StitchGroup = {
 
 type Command = Pattern | Stitch | StitchGroup;
 
-// The cs-n pattern from https://timhutton.github.io/crochet-simulator.
-type ScN = {
-  stitchAgo: number;
-  type: 'sc-n';
-};
-
-// The cs-m-n pattern from https://timhutton.github.io/crochet-simulator.
-type ScMN = {
-  stitchAgo1: number;
-  stitchAgo2: number;
-  type: 'sc-m-n';
-};
-
-type Step = Chain | ScN | ScMN;
+interface Crocheter<Output> {
+  execute(stitch: Stitch): Generator<Output>;
+}
 
 function isStitch(c: Command): c is Stitch {
   return 'stitchType' in c;
@@ -153,19 +114,31 @@ function bk(): Back {
   return {stitchType: 'bk'};
 }
 
-function scn(n: number): ScN {
-  return {
-    stitchAgo: n,
-    type: 'sc-n',
-  };
+function processStdin<Output>(
+  rl: readline.Interface,
+  crocheter: Crocheter<Output>
+) {
+  rl.question('\nInput: ', line => {
+    for (const output of processLine(line, crocheter)) {
+      console.log(`Output ${output}`);
+    }
+    processStdin(rl, crocheter);
+  });
 }
 
-function scmn(m: number, n: number): ScMN {
-  return {
-    stitchAgo1: m,
-    stitchAgo2: n,
-    type: 'sc-m-n',
-  };
+function* processLine<Output>(
+  line: string,
+  crocheter: Crocheter<Output>
+): Generator<string> {
+  for (const command of tokenizeLine(line)) {
+    console.log(`Processing command ${JSON.stringify(command)}`);
+    for (const stitch of extractStitches(command)) {
+      console.log(`Translating stitch ${JSON.stringify(stitch)}`);
+      for (const step of crocheter.execute(stitch)) {
+        yield JSON.stringify(step);
+      }
+    }
+  }
 }
 
 function* tokenizeLine(line: string): Generator<Command> {
@@ -281,12 +254,133 @@ function isPositiveNumber(n: number): boolean {
   return n > 0 && n !== Infinity;
 }
 
-function* translate(command: Command): Generator<Step> {
-  /*
-  yield c();
-  yield scn(1);
-  yield scmn(1, 2);
-  */
+function* extractStitches(command: Command): Generator<Stitch> {
+  if (isStitch(command)) {
+    yield command;
+  } else if (isStitchGroup(command)) {
+    yield* extractStitchesFromStitchGroup(command);
+  } else if (isPattern(command)) {
+    yield* extractStitchesFromPattern(command);
+  } else {
+    throw new Error(`Unexpected command ${JSON.stringify(command)}`);
+  }
 }
 
-processStdin();
+function* extractStitchesFromStitchGroup(
+  group: StitchGroup
+): Generator<Stitch> {
+  for (let i = 0; i < group.repeat; i++) {
+    for (const command of group.commands) {
+      yield* extractStitches(command);
+    }
+  }
+}
+
+function* extractStitchesFromPattern(pattern: Pattern): Generator<Stitch> {
+  switch (pattern.patternType) {
+    case 'mc':
+      yield* extractStitchesFromMagicCircle(pattern);
+      break;
+    case 'me':
+      yield* extractStitchesFromMagicEllipse(pattern);
+      break;
+    default:
+      throw new Error(`Unexpected pattern ${JSON.stringify(pattern)}`);
+  }
+}
+
+function* extractStitchesFromMagicCircle(mc: MagicCircle): Generator<Stitch> {
+  yield c();
+  yield c();
+  yield bk();
+  for (let i = 0; i < mc.initialStitchCount - 1; i++) {
+    yield sc();
+    yield bk();
+  }
+  sk();
+}
+
+function* extractStitchesFromMagicEllipse(me: MagicEllipse): Generator<Stitch> {
+  yield c();
+  for (let i = 0; i < me.extendedStitchCount; i++) {
+    yield c();
+  }
+  yield c();
+  yield c();
+  yield bk();
+
+  yield sc();
+  yield bk();
+
+  for (let i = 0; i < me.extendedStitchCount; i++) {
+    yield bk();
+    yield sc();
+    yield bk();
+  }
+
+  yield bk();
+  yield sc();
+  yield bk();
+  yield sc();
+  yield bk();
+  yield sc();
+
+  for (let i = 0; i < me.extendedStitchCount; i++) {
+    yield sc();
+  }
+  yield sc();
+  yield bk();
+  yield sc();
+  yield sk();
+}
+
+// The cs-n pattern from https://timhutton.github.io/crochet-simulator.
+type ScN = {
+  stitchAgo: number;
+  type: 'sc-n';
+};
+
+// The cs-m-n pattern from https://timhutton.github.io/crochet-simulator.
+type ScMN = {
+  stitchAgo1: number;
+  stitchAgo2: number;
+  type: 'sc-m-n';
+};
+
+type Step = Chain | ScN | ScMN;
+class TimCrocheter implements Crocheter<Step> {
+  *execute(stitch: Stitch): Generator<Step> {
+    yield scn(2);
+    yield scmn(2, 3);
+  }
+
+}
+
+function scn(n: number): ScN {
+  return {
+    stitchAgo: n,
+    type: 'sc-n',
+  };
+}
+
+function scmn(m: number, n: number): ScMN {
+  return {
+    stitchAgo1: m,
+    stitchAgo2: n,
+    type: 'sc-m-n',
+  };
+}
+
+function main() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const crocheter = new TimCrocheter();
+
+  processStdin(rl, crocheter);
+}
+
+if (require.main === module) {
+  main();
+}
