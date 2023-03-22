@@ -1,0 +1,6 @@
+// Maddy with a flat nose.
+me(2)
+[sc]4 inc sc inc inc sc inc
+[sc]5 inc sc inc sc sc inc sc inc sc
+[sc]6 inc sc sc inc sc sc inc sc sc inc [sc]2
+[sc]7 inc sc sc inc [sc]4 inc sc sc inc [sc]3

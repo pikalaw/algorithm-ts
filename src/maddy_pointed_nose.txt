@@ -1,0 +1,46 @@
+// Maddy.
+
+// Nose.
+mc(6)
+[sc]3 [inc]3
+[sc]4 inc incdec inc sc
+[sc]4 inc sc sc inc sc sc inc sc
+
+// Face.
+sc inc sc inc sc inc [sc]6 inc sc inc
+sc incdec sc inc sc sc inc [sc]8 inc sc sc inc
+[sc]2 inc [sc]2 inc [sc]2 incdec [sc]10 incdec [sc]2 inc
+[sc]2 incdec [sc]2 inc [sc]3 incdec [sc]12 incdec [sc]3 inc
+[sc]3 inc [sc]3 incdec [sc]3 inc [sc]16 inc [sc]3 incdec
+
+// forehead.
+[sc]40
+[sc]40
+
+// back of head.
+// shrink by 6s.
+// [sc]2 [dec]2 [sc]5 dec [sc]6 dec [sc]6 dec [sc]6 dec [sc]3
+// sc [dec]2 [sc]4 dec [sc]4 dec [sc]6 dec [sc]4 dec [sc]3
+// [dec]2 [sc]3 dec [sc]3 dec [sc]4 dec [sc]3 dec [sc]3
+// sc dec [sc]2 dec [sc]2 dec [sc]2 dec [sc]2 dec sc dec
+
+// back of head.
+// shrink by 3s.
+// sc sc dec dec [sc]23 dec [sc]9
+// sc dec dec [sc]10 dec [sc]20
+// dec dec [sc]19 dec [sc]9
+// sc dec dec [sc]10 dec [sc]20
+// sc dec [sc]14 dec [sc]6 dec
+// sc dec [sc]6 dec [sc]11 dec
+// sc dec [sc]9 dec [sc]4 dec
+
+// back of head.
+// shrink by 2s.
+[sc]3 dec [sc]18 dec [sc]15
+[sc]12 dec [sc]17 dec [sc]5
+[sc]3 dec [sc]16 dec [sc]13
+[sc]11 dec [sc]15 dec [sc]5
+[sc]3 dec [sc]14 dec [sc]12
+[sc]10 dec [sc]13 dec [sc]4
+[sc]3 dec [sc]12 dec [sc]9
+[sc]9 dec [sc]11 dec [sc]2
