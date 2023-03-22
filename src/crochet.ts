@@ -294,10 +294,9 @@ function* extractStitchesFromPattern(pattern: Pattern): Generator<Stitch> {
 function* extractStitchesFromMagicCircle(mc: MagicCircle): Generator<Stitch> {
   yield c();
   yield c();
-  yield bk();
   for (let i = 0; i < mc.initialStitchCount - 1; i++) {
-    yield sc();
     yield bk();
+    yield sc();
   }
   sk();
 }
