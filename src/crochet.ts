@@ -1,17 +1,5 @@
 import * as readline from 'readline';
 
-type MagicCircle = {
-  initialStitchCount: number;
-  patternType: 'mc';
-};
-
-type MagicEllipse = {
-  extendedStitchCount: number;
-  patternType: 'me';
-};
-
-type Pattern = MagicCircle | MagicEllipse;
-
 type Chain = {
   stitchType: 'c';
 };
@@ -54,6 +42,24 @@ type StitchGroup = {
   repeat: number;
 };
 
+type MagicCircle = {
+  initialStitchCount: number;
+  patternType: 'mc';
+};
+
+type MagicEllipse = {
+  extendedStitchCount: number;
+  patternType: 'me';
+};
+
+type Bend = {
+  roundStitchCount: number;
+  depth: number;
+  patternType: 'bend';
+};
+
+type Pattern = MagicCircle | MagicEllipse | Bend;
+
 type Command = Pattern | Stitch | StitchGroup;
 
 interface Crocheter<Output> {
@@ -88,6 +94,14 @@ function magicEllipse(extendedStitchCount: number): MagicEllipse {
   return {
     extendedStitchCount,
     patternType: 'me',
+  };
+}
+
+function bend(roundStitchCount: number, depth: number): Bend {
+  return {
+    roundStitchCount,
+    depth,
+    patternType: 'bend',
   };
 }
 
@@ -250,6 +264,24 @@ function* tokenizeSingle(piece: string): Generator<Command> {
     return;
   }
 
+  if (piece.startsWith('bend')) {
+    const matches = piece.match(/bend\((\d+),(\d)\)/);
+    if (!matches) throw new Error(`Unknown input '${piece}'.`);
+
+    const roundStitchCount = Number(matches[1]);
+    if (!isPositiveNumber(roundStitchCount)) {
+      throw new Error(`Unknown input '${piece}'.`);
+    }
+
+    const depth = Number(matches[2]);
+    if (!isPositiveNumber(depth)) {
+      throw new Error(`Unknown input '${piece}'.`);
+    }
+
+    yield bend(roundStitchCount, depth);
+    return;
+  }
+
   throw new Error(`Unknown input '${piece}'.`);
 }
 
@@ -301,6 +333,9 @@ function* extractStitchesFromPattern(pattern: Pattern): Generator<Stitch> {
     case 'me':
       yield* extractStitchesFromMagicEllipse(pattern);
       break;
+    case 'bend':
+      yield* extractStitchesFromBend(pattern);
+      break;
     default:
       throw new Error(`Unexpected pattern ${JSON.stringify(pattern)}`);
   }
@@ -313,7 +348,6 @@ function* extractStitchesFromMagicCircle(mc: MagicCircle): Generator<Stitch> {
     yield bk();
     yield sc();
   }
-  sk();
 }
 
 function* extractStitchesFromMagicEllipse(me: MagicEllipse): Generator<Stitch> {
@@ -348,6 +382,65 @@ function* extractStitchesFromMagicEllipse(me: MagicEllipse): Generator<Stitch> {
   yield bk();
   yield sc();
   yield sk();
+}
+
+function* extractStitchesFromBend(bend: Bend): Generator<Stitch> {
+  if (bend.depth !== 2) {
+    throw new Error(
+      `Supporting depth of 2 for bend for now but found ${JSON.stringify(bend)}`
+    );
+  }
+
+  const segmentLength = Math.floor(bend.roundStitchCount / (bend.depth * 2));
+  let stitchCountInLoop = 0;
+
+  for (let i = 0; i < segmentLength; i++) {
+    yield sc();
+  }
+  stitchCountInLoop += segmentLength;
+
+  for (let i = 0; i < 2 * segmentLength; i++) {
+    yield c();
+  }
+  stitchCountInLoop += 2 * segmentLength;
+
+  for (let i = 0; i < segmentLength; i++) {
+    yield sc();
+  }
+  stitchCountInLoop += segmentLength;
+
+  for (let i = 0; i < bend.roundStitchCount - stitchCountInLoop; i++) {
+    yield sc();
+  }
+
+  stitchCountInLoop = 0;
+
+  for (let i = 0; i < segmentLength; i++) {
+    yield sc();
+  }
+  stitchCountInLoop += segmentLength;
+
+  for (let i = 0; i < bend.roundStitchCount; i++) {
+    yield bk();
+  }
+
+  for (let i = 0; i < 2 * segmentLength; i++) {
+    yield sc();
+  }
+  stitchCountInLoop += 2 * segmentLength;
+
+  for (let i = 0; i < bend.roundStitchCount; i++) {
+    yield sk();
+  }
+
+  for (let i = 0; i < segmentLength; i++) {
+    yield sc();
+  }
+  stitchCountInLoop += segmentLength;
+
+  for (let i = 0; i < bend.roundStitchCount - stitchCountInLoop; i++) {
+    yield sc();
+  }
 }
 
 // The cs-n pattern from https://timhutton.github.io/crochet-simulator.

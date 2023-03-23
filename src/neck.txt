@@ -1,8 +1,11 @@
 mc(6)
 [inc]6
-
-[[sc]12]4
-[[sc]6 [c]6 [sc]6 [bk]12 [sc]6 [sk]12]8
-[[sc]12]4
-
- 
+[inc sc]6
+[inc [sc]2]6
+[inc [sc]3]6
+[inc [sc]4]6
+[inc [sc]5]6
+[inc [sc]6]6
+// [[sc]12 [c]24 [sc]24 [bk]48 [sc]24 [sk]48 [sc]12]10
+[bend(48,2)]5
+[[sc]48]5
