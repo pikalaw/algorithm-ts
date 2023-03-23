@@ -58,7 +58,11 @@ type Command = Pattern | Stitch | StitchGroup;
 
 interface Crocheter<Output> {
   execute(stitch: Stitch): Generator<Output>;
-  format(output: Output): string;
+}
+
+interface Formatter<Output> {
+  format(output: Output): string | undefined;
+  flush(): string | undefined;
 }
 
 function isStitch(c: Command): c is Stitch {
@@ -117,30 +121,41 @@ function bk(): Back {
 
 function processStdin<Output>(
   rl: readline.Interface,
-  crocheter: Crocheter<Output>
+  crocheter: Crocheter<Output>,
+  formatter: Formatter<Output>
 ) {
   rl.question('\nStitches: ', line => {
     process.stdout.write('\n');
-    for (const output of processLine(line, crocheter)) {
-      process.stdout.write(' ');
+    let firstInLine = true;
+    for (const output of processLine(line, crocheter, formatter)) {
+      if (firstInLine) {
+        process.stdout.write(' ');
+      } else {
+        process.stdout.write(',');
+      }
       process.stdout.write(output);
+      firstInLine = false;
     }
     process.stdout.write('\n');
-    processStdin(rl, crocheter);
+    processStdin(rl, crocheter, formatter);
   });
 }
 
 function* processLine<Output>(
   line: string,
-  crocheter: Crocheter<Output>
+  crocheter: Crocheter<Output>,
+  formatter: Formatter<Output>
 ): Generator<string> {
   for (const command of tokenizeLine(line)) {
     for (const stitch of extractStitches(command)) {
       for (const step of crocheter.execute(stitch)) {
-        yield crocheter.format(step);
+        const result = formatter.format(step);
+        if (result) yield result;
       }
     }
   }
+  const result = formatter.flush();
+  if (result) yield result;
 }
 
 function* tokenizeLine(line: string): Generator<Command> {
@@ -395,8 +410,46 @@ class TimCrocheter implements Crocheter<Step> {
         throw new Error(`Unknown stitch ${stitch}`);
     }
   }
+}
 
-  format(step: Step): string {
+class StepFormatter implements Formatter<Step> {
+  private lastStepStr = '';
+  private lastStepCount = 0;
+
+  format(step: Step): string | undefined {
+    const stepStr = StepFormatter.formatStep(step);
+    if (this.lastStepCount === 0) {
+      this.lastStepStr = stepStr;
+      this.lastStepCount = 1;
+      return undefined;
+    }
+    if (this.lastStepStr === stepStr) {
+      this.lastStepCount++;
+      return undefined;
+    }
+    const result = StepFormatter.formatGroup(
+      this.lastStepStr,
+      this.lastStepCount
+    );
+    this.lastStepStr = stepStr;
+    this.lastStepCount = 1;
+    return result;
+  }
+
+  flush(): string | undefined {
+    if (this.lastStepCount > 0) {
+      const result = StepFormatter.formatGroup(
+        this.lastStepStr,
+        this.lastStepCount
+      );
+      this.lastStepCount = 0;
+      return result;
+    } else {
+      return undefined;
+    }
+  }
+
+  private static formatStep(step: Step): string {
     if (isChain(step)) {
       return 'c';
     } else if (isScN(step)) {
@@ -406,6 +459,11 @@ class TimCrocheter implements Crocheter<Step> {
     } else {
       throw new Error(`Unknown step ${JSON.stringify(step)}`);
     }
+  }
+
+  private static formatGroup(stepStr: string, repeat: number): string {
+    if (repeat === 1) return stepStr;
+    else return `(${stepStr})${repeat}`;
   }
 }
 
@@ -430,8 +488,9 @@ function main() {
     output: process.stdout,
   });
   const crocheter = new TimCrocheter();
+  const formatter = new StepFormatter();
 
-  processStdin(rl, crocheter);
+  processStdin(rl, crocheter, formatter);
 }
 
 if (require.main === module) {
