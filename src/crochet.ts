@@ -1,3 +1,4 @@
+// https://timhutton.github.io/crochet-simulator
 import * as readline from 'readline';
 
 type Chain = {

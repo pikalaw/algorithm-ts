@@ -29,5 +29,5 @@ sc incdec sc inc sc sc inc [sc]8 inc sc sc inc
 [sc]9 dec [sc]11 dec [sc]2
 
 // Neck.
-[[sc]12 [c]12 [sc]12 [bk]24 [sc]12 [sk]24]5
+[[sc]6 [c]12 [sc]6 [sc]6 [bk]24 [sc]12 [sk]24 [sc]6]10
 [[sc]24]3
