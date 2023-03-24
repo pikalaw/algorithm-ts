@@ -2,12 +2,16 @@ mc(6)
 [inc]6
 [inc sc]6
 [inc [sc]2]6
-[[sc]24]3
+[inc [sc]3]6
+[inc [sc]4]6
+[inc [sc]5]6
+[[sc]42]3
 
 // Skip by 1.
-[[sc]6 [c]12 [sc]6 [sc]6 [bk]24 [sc]12 [sk]24 [sc]6]20
+//[[sc]6 [c]12 [sc]6 [sc]6 [bk]24 [sc]12 [sk]24 [sc]6]20
 
 // Skip by 2.
 //[[sc]8 [c]8 [sc]8 [sc]4 [c]16 [sc]4 [sc]4 [bk]24 [sc]4 [bk]24 [sc]8 [sk]24 [sc]4 [sk]24 [sc]4]10
 
-[[sc]24]3
+[bend(42,4)]5
+//[bend(24,2)]1

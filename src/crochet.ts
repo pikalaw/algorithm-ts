@@ -386,61 +386,46 @@ function* extractStitchesFromMagicEllipse(me: MagicEllipse): Generator<Stitch> {
 }
 
 function* extractStitchesFromBend(bend: Bend): Generator<Stitch> {
-  if (bend.depth !== 2) {
+  if (bend.depth < 2) {
     throw new Error(
-      `Supporting depth of 2 for bend for now but found ${JSON.stringify(bend)}`
+      `Bend depth must be at least 2 but found ${JSON.stringify(bend)}`
     );
   }
 
   const segmentLength = Math.floor(bend.roundStitchCount / (bend.depth * 2));
-  let stitchCountInLoop = 0;
+  if (segmentLength < 1) {
+    throw new Error(
+      `Too many depths for the stitch count with ${JSON.stringify(bend)}`
+    );
+  }
 
-  for (let i = 0; i < segmentLength; i++) {
+  // Set up the ridges.
+  for (let level = bend.depth - 1; level >= 1; level--) {
+    for (let i = 0; i < segmentLength * level; i++) yield sc();
+    for (
+      let i = 0;
+      i < bend.roundStitchCount - 2 * (segmentLength * level);
+      i++
+    ) {
+      yield c();
+    }
+    for (let i = 0; i < segmentLength * level; i++) yield sc();
+  }
+  // Cover the ridges.
+  for (let level = 1; level < bend.depth; level++) {
+    for (let i = 0; i < segmentLength; i++) yield sc();
+    for (let i = 0; i < bend.roundStitchCount; i++) yield bk();
+  }
+  for (
+    let i = 0;
+    i < bend.roundStitchCount - 2 * (segmentLength * (bend.depth - 1));
+    i++
+  ) {
     yield sc();
   }
-  stitchCountInLoop += segmentLength;
-
-  for (let i = 0; i < 2 * segmentLength; i++) {
-    yield c();
-  }
-  stitchCountInLoop += 2 * segmentLength;
-
-  for (let i = 0; i < segmentLength; i++) {
-    yield sc();
-  }
-  stitchCountInLoop += segmentLength;
-
-  for (let i = 0; i < bend.roundStitchCount - stitchCountInLoop; i++) {
-    yield sc();
-  }
-
-  stitchCountInLoop = 0;
-
-  for (let i = 0; i < segmentLength; i++) {
-    yield sc();
-  }
-  stitchCountInLoop += segmentLength;
-
-  for (let i = 0; i < bend.roundStitchCount; i++) {
-    yield bk();
-  }
-
-  for (let i = 0; i < 2 * segmentLength; i++) {
-    yield sc();
-  }
-  stitchCountInLoop += 2 * segmentLength;
-
-  for (let i = 0; i < bend.roundStitchCount; i++) {
-    yield sk();
-  }
-
-  for (let i = 0; i < segmentLength; i++) {
-    yield sc();
-  }
-  stitchCountInLoop += segmentLength;
-
-  for (let i = 0; i < bend.roundStitchCount - stitchCountInLoop; i++) {
-    yield sc();
+  for (let level = 1; level < bend.depth; level++) {
+    for (let i = 0; i < bend.roundStitchCount; i++) yield sk();
+    for (let i = 0; i < segmentLength; i++) yield sc();
   }
 }
 
